@@ -1,0 +1,31 @@
+#pragma kernel CalculateGradient
+#pragma kernel ErodeVoxels
+#include "Assets/Compute/Erosion/Include/Gradient.hlsl"
+
+[numthreads(4,4,4)]
+void CalculateGradient (uint3 voxelId : SV_DispatchThreadID)
+{
+    if (IsOutOfVoxelVolumeBounds(voxelId))
+    {
+        return;
+    }
+    Voxel voxel = GetVoxel(voxelId);
+    voxel.SetGradient(GetGradient(voxel.GetValue(), voxel.materialIndex, voxelId));
+    SetVoxel(voxelId, voxel);
+}
+
+
+[numthreads(4,4,4)]
+void ErodeVoxels (uint3 voxelId : SV_DispatchThreadID)
+{
+    if (IsOutOfVoxelVolumeBounds(voxelId))
+    {
+        return;
+    }
+    Voxel voxel = GetVoxel(voxelId);
+    if(voxel.GetGradient().y < 0 && voxel.GetValue() < 0.0f)
+    {
+        voxel.materialIndex = (voxel.materialIndex+1) % 5;
+    }
+    SetVoxel(voxelId, voxel);
+}
