@@ -11,6 +11,11 @@ Voxel GetVoxel(uint3 coordinate)
     return UnpackVoxel(voxel_volume_read[CalculateVoxelVolumeIndex(coordinate)]);
 }
 
+Voxel GetWrittenVoxel(uint coordinate)
+{
+    return UnpackVoxel(voxel_volume_write[CalculateVoxelVolumeIndex(coordinate)]);
+}
+
 void SetVoxel(uint3 coordinate, Voxel voxel)
 {
     voxel_volume_write[CalculateVoxelVolumeIndex(coordinate)] = PackVoxel(voxel);

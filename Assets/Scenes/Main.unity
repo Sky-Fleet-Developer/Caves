@@ -168,8 +168,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   materialPropertiesConfig: {fileID: 11400000, guid: f827811ebe4115d4dbb8180c51a7f62c, type: 2}
-  compute: {fileID: 7200000, guid: a4bbc6f50b4ff6b479581c45ebb7d5f2, type: 3}
+  erodeCompute: {fileID: 7200000, guid: a4bbc6f50b4ff6b479581c45ebb7d5f2, type: 3}
+  syncCompute: {fileID: 7200000, guid: e741692e9bcb8104b884a1ee770f8d8c, type: 3}
   defaultVoxelWetness: 0.1
+  useSync: 1
 --- !u!1 &113563605
 GameObject:
   m_ObjectHideFlags: 0
@@ -421,7 +423,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   simulationSpace:
     bounds:
-      m_Position: {x: 0, y: 0, z: 0}
+      m_Position: {x: 0, y: -1, z: 0}
       m_Size: {x: 2, y: 2, z: 2}
 --- !u!1 &430985030
 GameObject:

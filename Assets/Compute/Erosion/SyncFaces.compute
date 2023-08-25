@@ -1,0 +1,57 @@
+#pragma kernel SyncGradient
+#include "Assets/Compute/Erosion/Include/SyncVoxelBuffer.hlsl"
+
+int face;
+
+uint3 GetACoord(uint3 voxelId)
+{
+    [branch]
+    switch (face)
+    {
+        case 0:
+            return uint3(voxelId.xy, numberOfVoxels.z - 2 + voxelId.z);
+        case 1:
+            return uint3(numberOfVoxels.x - 2 + voxelId.z, voxelId.xy);
+        default:
+            return uint3(voxelId.x, numberOfVoxels.y - 2 + voxelId.z, voxelId.y);
+    }
+}
+
+uint3 GetBCoord(uint3 voxelId)
+{
+    [branch]
+    switch (face)
+    {
+    case 0:
+        return uint3(voxelId.xy, voxelId.z);
+    case 1:
+        return uint3(voxelId.z, voxelId.xy);
+    default:
+        return uint3(voxelId.x, voxelId.z, voxelId.y);
+    }
+}
+
+[numthreads(8,8,1)]
+void SyncGradient (uint3 voxelId : SV_DispatchThreadID)
+{
+    uint3 coordA = GetACoord(voxelId);
+    if (IsOutOfVoxelVolumeBounds(coordA))
+    {
+        return;
+    }
+    uint3 coordB = GetBCoord(voxelId);
+    if (IsOutOfVoxelVolumeBounds(coordB))
+    {
+        return;
+    }
+    
+    Voxel aVox = GetVoxelA(coordA);
+    Voxel bVox = GetVoxelB(coordB);
+
+    float3 gradient = aVox.valueAndGradient.yzw + bVox.valueAndGradient.yzw; 
+    aVox.SetGradient(gradient);
+    bVox.SetGradient(gradient);
+
+    SetVoxelA(coordA, aVox);
+    SetVoxelB(coordB, bVox);
+}

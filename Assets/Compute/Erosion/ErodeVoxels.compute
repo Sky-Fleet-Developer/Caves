@@ -1,6 +1,10 @@
 #pragma kernel CalculateGradient
 #pragma kernel ErodeVoxels
+#pragma kernel Apply
 #include "Assets/Compute/Erosion/Include/Gradient.hlsl"
+#include "Assets/Compute/Erosion/Include/WaterDistribution.hlsl"
+
+float deltaTime;
 
 [numthreads(4,4,4)]
 void CalculateGradient (uint3 voxelId : SV_DispatchThreadID)
@@ -11,8 +15,10 @@ void CalculateGradient (uint3 voxelId : SV_DispatchThreadID)
     }
     Voxel voxel = GetVoxel(voxelId);
     voxel.SetGradient(GetGradient(voxel.GetValue(), voxel.materialIndex, voxelId));
+    voxel.SetValue(max(voxel.GetValue(), -1));
     SetVoxel(voxelId, voxel);
 }
+
 
 
 [numthreads(4,4,4)]
@@ -22,10 +28,22 @@ void ErodeVoxels (uint3 voxelId : SV_DispatchThreadID)
     {
         return;
     }
-    Voxel voxel = GetVoxel(voxelId);
-    if(voxel.GetGradient().y < 0 && voxel.GetValue() < 0.0f)
+    NullableVoxel distributionVoxels[neighboursCount];
+    GetDistributionVoxels(voxelId, distributionVoxels);
+    float waterSum;
+    float3 waterGradient = CalculateWaterGradient(distributionVoxels, waterSum);
+    DistributeWater(deltaTime, waterGradient, waterSum, distributionVoxels);
+    SetDistributionVoxel(voxelId, distributionVoxels);
+}
+[numthreads(4,4,4)]
+void Apply(uint3 voxelId : SV_DispatchThreadID)
+{
+    if (IsOutOfVoxelVolumeBounds(voxelId))
     {
-        voxel.materialIndex = (voxel.materialIndex+1) % 5;
+        return;
     }
+
+    Voxel voxel = GetVoxel(voxelId);
+    voxel.SetValue(voxel.waterAmount - 0.1f);
     SetVoxel(voxelId, voxel);
 }

@@ -12,11 +12,12 @@ namespace Voxels.Simulation.Erosion
 {
     public class ErosionSimulation : Simulation
     {
-        [SerializeField] private MaterialPropertiesConfig materialPropertiesConfig; 
-        [SerializeField] private ComputeShader compute;
+        [SerializeField] private MaterialPropertiesConfig materialPropertiesConfig;
+        [SerializeField] private ComputeShader erodeCompute;
+        [SerializeField] private ComputeShader syncCompute;
         [SerializeField] private float defaultVoxelWetness = 0.1f;
         private ComputeBuffer m_materialPropertiesBuffer;
-        
+
         private class DoubleBuffer
         {
             private readonly ComputeBuffer m_a;
@@ -44,23 +45,40 @@ namespace Voxels.Simulation.Erosion
             {
                 m_switcher = !m_switcher;
             }
-            
+
             public void Release()
             {
                 m_a.Release();
                 m_b.Release();
             }
         }
-        
+
         private Dictionary<int3, DoubleBuffer> m_buffers;
-        
+
+        private static int3[] neighbours =
+        {
+            new(0, 0, 1),
+            new(1, 0, 0),
+            new(0, 1, 0),
+        };
+
+
         public override void Init(SimulationSpace simulationSpace)
         {
             base.Init(simulationSpace);
             CreateBuffers();
+            UpdateConfigs();
+        }
+
+        private void UpdateConfigs()
+        {
             VoxelVolumeConfig voxelVolumeConfig = WorldManager.VoxelConfig.VoxelVolumeConfig;
-            compute.SetInts(ComputeShaderProperties.NumberOfVoxels, voxelVolumeConfig.NumberOfVoxels.x, voxelVolumeConfig.NumberOfVoxels.y, voxelVolumeConfig.NumberOfVoxels.z);
-            compute.SetFloat(ComputeShaderProperties.VoxelSpacing, voxelVolumeConfig.VoxelSpacing);
+            erodeCompute.SetInts(ComputeShaderProperties.NumberOfVoxels, voxelVolumeConfig.NumberOfVoxels.x, voxelVolumeConfig.NumberOfVoxels.y, voxelVolumeConfig.NumberOfVoxels.z);
+            erodeCompute.SetFloat(ComputeShaderProperties.VoxelSpacing, voxelVolumeConfig.VoxelSpacing);
+            syncCompute.SetInts(ComputeShaderProperties.NumberOfVoxels, voxelVolumeConfig.NumberOfVoxels.x, voxelVolumeConfig.NumberOfVoxels.y, voxelVolumeConfig.NumberOfVoxels.z);
+            syncCompute.SetFloat(ComputeShaderProperties.VoxelSpacing, voxelVolumeConfig.VoxelSpacing);
+            erodeCompute.SetBuffer(0, ComputeShaderProperties.MaterialPropertiesConfig, m_materialPropertiesBuffer);
+            erodeCompute.SetBuffer(1, ComputeShaderProperties.MaterialPropertiesConfig, m_materialPropertiesBuffer);
         }
 
         private void OnDestroy()
@@ -74,6 +92,7 @@ namespace Voxels.Simulation.Erosion
             {
                 ReleaseBuffers();
             }
+
             m_buffers = new Dictionary<int3, DoubleBuffer>(m_simulationSpace.Chunks.Count);
 
             m_materialPropertiesBuffer = materialPropertiesConfig.GetConfigsBuffer();
@@ -90,13 +109,13 @@ namespace Voxels.Simulation.Erosion
                 for (int i = 0; i < voxelsArray.Length; i++)
                 {
                     uint valueAndMaterial = oldBufferData[i * 2];
-                    ushort value = (ushort)valueAndMaterial;
-                    ushort material = (ushort)(valueAndMaterial >> 16);
-                    voxelsArray[i] = new PackedVoxel(value, material, defaultVoxelWetness,
-                        new float3(-1, 0.5f, 3));
+                    ushort value = (ushort) valueAndMaterial;
+                    ushort material = (ushort) (valueAndMaterial >> 16);
+                    voxelsArray[i] = new PackedVoxel(value, material, defaultVoxelWetness, float3.zero);
                 }
-                
+
                 bufferA.SetData(voxelsArray);
+                bufferB.SetData(voxelsArray);
                 m_buffers.Add(chunkKv.Key, new DoubleBuffer(bufferA, bufferB));
             }
         }
@@ -107,32 +126,86 @@ namespace Voxels.Simulation.Erosion
             {
                 chunkKv.Value.Release();
             }
+
             m_materialPropertiesBuffer.Release();
         }
 
         public override void Iterate(float deltaTime)
         {
-            compute.SetBuffer(0, ComputeShaderProperties.MaterialPropertiesConfig, m_materialPropertiesBuffer);
-            compute.SetBuffer(1, ComputeShaderProperties.MaterialPropertiesConfig, m_materialPropertiesBuffer);
+            erodeCompute.SetFloat(ComputeShaderProperties.DeltaTime, deltaTime);
 
+            CalculateGradient();
+
+            Sync();
+
+            Erode();
+        }
+        private void CalculateGradient()
+        {
             foreach (KeyValuePair<int3, DoubleBuffer> chunkKv in m_buffers)
             {
-                compute.SetBuffer(0, ComputeShaderProperties.VoxelVolumeRead, chunkKv.Value.GetBufferForRead());
-                compute.SetBuffer(0, ComputeShaderProperties.VoxelVolumeWrite, chunkKv.Value.GetBufferForWrite());
+                erodeCompute.SetBuffer(0, ComputeShaderProperties.VoxelVolumeRead, chunkKv.Value.GetBufferForRead());
+                erodeCompute.SetBuffer(0, ComputeShaderProperties.VoxelVolumeWrite, chunkKv.Value.GetBufferForWrite());
 
-                compute.Dispatch(0, WorldManager.VoxelConfig.VoxelVolumeConfig.NumberOfCellsAlongAxis);
-                chunkKv.Value.SwitchBuffers();
-
-                compute.SetBuffer(1, ComputeShaderProperties.VoxelVolumeRead, chunkKv.Value.GetBufferForRead());
-                compute.SetBuffer(1, ComputeShaderProperties.VoxelVolumeWrite, chunkKv.Value.GetBufferForWrite());
-
-                compute.Dispatch(1, WorldManager.VoxelConfig.VoxelVolumeConfig.NumberOfCellsAlongAxis);
+                erodeCompute.Dispatch(0, WorldManager.VoxelConfig.VoxelVolumeConfig.NumberOfVoxelsAlongAxis);
                 chunkKv.Value.SwitchBuffers();
             }
         }
+        
+        private void Sync()
+        {
+            int3 min = m_simulationSpace.GetMinimum();
+            int3 max = m_simulationSpace.GetMaximum();
+            for (int3 coord = min; coord.x < max.x; coord.x++)
+            {
+                for (coord.y = min.y; coord.y < max.y; coord.y++)
+                {
+                    for (coord.z = min.z; coord.z < max.z; coord.z++)
+                    {
+                        for (int i = 0; i < neighbours.Length; i++)
+                        {
+                            IterateSync(coord, i, max);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void IterateSync(int3 coord, int neighbourIdx, int3 max)
+        {
+            int3 neighbour = coord + neighbours[neighbourIdx];
+            if (neighbour.x >= max.x || neighbour.y >= max.y || neighbour.z >= max.z) return;
+            syncCompute.SetBuffer(0, ComputeShaderProperties.VoxelVolumeA, m_buffers[coord].GetBufferForRead());
+            syncCompute.SetBuffer(0, ComputeShaderProperties.VoxelVolumeB, m_buffers[neighbour].GetBufferForRead());
+            syncCompute.SetInt(ComputeShaderProperties.Face, neighbourIdx);
+            int numberOfVoxelsAlongAxis = WorldManager.VoxelConfig.VoxelVolumeConfig.NumberOfVoxelsAlongAxis;
+            syncCompute.Dispatch(0, new int3(numberOfVoxelsAlongAxis, numberOfVoxelsAlongAxis, 2));
+        }
+
+        private void Erode()
+        {
+            foreach (KeyValuePair<int3, DoubleBuffer> chunkKv in m_buffers)
+            {
+                erodeCompute.SetBuffer(1, ComputeShaderProperties.VoxelVolumeRead, chunkKv.Value.GetBufferForRead());
+                erodeCompute.SetBuffer(1, ComputeShaderProperties.VoxelVolumeWrite, chunkKv.Value.GetBufferForWrite());
+
+                erodeCompute.Dispatch(1, WorldManager.VoxelConfig.VoxelVolumeConfig.NumberOfVoxelsAlongAxis);
+                chunkKv.Value.SwitchBuffers();
+            }
+        }
+        
 
         public override void OnFinalize()
         {
+            foreach (KeyValuePair<int3, DoubleBuffer> chunkKv in m_buffers)
+            {
+                erodeCompute.SetBuffer(2, ComputeShaderProperties.VoxelVolumeRead, chunkKv.Value.GetBufferForRead());
+                erodeCompute.SetBuffer(2, ComputeShaderProperties.VoxelVolumeWrite, chunkKv.Value.GetBufferForWrite());
+
+                erodeCompute.Dispatch(2, WorldManager.VoxelConfig.VoxelVolumeConfig.NumberOfVoxelsAlongAxis);
+                chunkKv.Value.SwitchBuffers();
+            }
+            
             foreach (KeyValuePair<int3, Chunk> chunkKv in m_simulationSpace.Chunks)
             {
                 ComputeBuffer voxelsBuffer = chunkKv.Value.GetVoxelsBuffer();
@@ -143,18 +216,13 @@ namespace Voxels.Simulation.Erosion
 
                 for (int i = 0; i < voxelsArray.Length; i++)
                 {
-                    float3 gr = voxelsArray[i].GetGradient();
-
-                    uint newValue = voxelsArray[i].value | ((uint) voxelsArray[i].material << 16);
-                    if (newValue != data[i * 2])
-                    {
-                        
-                    }
-                    data[i * 2] = newValue;
+                    data[i * 2] = voxelsArray[i].value | ((uint) voxelsArray[i].material << 16);
                 }
+
                 voxelsBuffer.SetData(data);
                 chunkKv.Value.RegenerateMesh();
             }
+
             ReleaseBuffers();
         }
     }

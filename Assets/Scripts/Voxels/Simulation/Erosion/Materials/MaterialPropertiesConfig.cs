@@ -12,6 +12,10 @@ namespace Voxels.Simulation.Erosion.Materials
         public ComputeBuffer GetConfigsBuffer()
         {
             ComputeBuffer buffer = new ComputeBuffer(materialInfos.Count, Marshal.SizeOf<MaterialInfo>());
+            for (var i = 0; i < materialInfos.Count; i++)
+            {
+                materialInfos[i].CalculateInverted();
+            }
             buffer.SetData(materialInfos.ToArray());
             return buffer;
         }

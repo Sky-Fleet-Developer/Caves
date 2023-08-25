@@ -19,7 +19,10 @@ namespace Voxels.Simulation
         public void Execute()
         {
             Init();
-            SimulationIteration(0);
+            for (int i = 0; i < 2000; i++)
+            {
+                SimulationIteration(0.2f);
+            }
             OnFinalize();   
         }
         

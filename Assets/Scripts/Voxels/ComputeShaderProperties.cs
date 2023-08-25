@@ -26,5 +26,10 @@ namespace Voxels
         public static readonly int VoxelVolumeRead = Shader.PropertyToID("voxel_volume_read");
         public static readonly int VoxelVolumeWrite = Shader.PropertyToID("voxel_volume_write");
         public static readonly int MaterialPropertiesConfig = Shader.PropertyToID("material_properties_config");
+        public static readonly int VoxelVolumeA = Shader.PropertyToID("voxel_volume_a");
+        public static readonly int VoxelVolumeB = Shader.PropertyToID("voxel_volume_b");
+        public static readonly int Face = Shader.PropertyToID("face");
+        public static readonly int DeltaTime = Shader.PropertyToID("deltaTime");
+
     }
 }

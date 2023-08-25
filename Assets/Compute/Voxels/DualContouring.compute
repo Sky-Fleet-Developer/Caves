@@ -1,4 +1,4 @@
-#pragma kernel GenerateInnerCellVertices
+ #pragma kernel GenerateInnerCellVertices
 #pragma kernel ApplyLevelOfDetail
 #pragma kernel GenerateOuterCellVertices
 #pragma kernel GenerateTriangles

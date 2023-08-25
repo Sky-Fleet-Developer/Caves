@@ -9,5 +9,18 @@ namespace Voxels.Simulation.Erosion.Materials
     {
         [Range(0, 1)]
         public float looseness;
+        private float loosenessInverted;
+
+        public void CalculateInverted()
+        {
+            if (looseness == 0)
+            {
+                loosenessInverted = float.MaxValue;
+            }
+            else
+            {
+                loosenessInverted = 1 / looseness;
+            }
+        }
     }
 }
