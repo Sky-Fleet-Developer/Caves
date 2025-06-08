@@ -22,6 +22,8 @@ namespace World.Editor
         private SerializedProperty m_chunkPrefab;
         private SerializedProperty m_initialChunkPoolPopulation;
         private SerializedProperty m_lodDistances;
+        private SerializedProperty m_maxChunksHeight;
+        private SerializedProperty m_maxChunksDepth;
         private SerializedProperty cachePath;
         private SerializedProperty cacheFileName;
 
@@ -32,6 +34,8 @@ namespace World.Editor
             m_chunkPrefab = serializedObject.FindProperty(nameof(m_chunkPrefab));
             m_initialChunkPoolPopulation = serializedObject.FindProperty(nameof(m_initialChunkPoolPopulation));
             m_lodDistances = serializedObject.FindProperty(nameof(m_lodDistances));
+            m_maxChunksHeight = serializedObject.FindProperty(nameof(m_maxChunksHeight));
+            m_maxChunksDepth = serializedObject.FindProperty(nameof(m_maxChunksDepth));
             cachePath = serializedObject.FindProperty(nameof(cachePath));
             cacheFileName = serializedObject.FindProperty(nameof(cacheFileName));
         }
@@ -47,10 +51,9 @@ namespace World.Editor
             if (s_showWorldOptions = EditorGUILayout.BeginFoldoutHeaderGroup(s_showWorldOptions, "World"))
             {
                 EditorGUILayout.ObjectField(m_viewer);
-                m_updateInterval.floatValue =
-                    math.max(
-                        EditorGUILayout.FloatField(ObjectNames.NicifyVariableName(nameof(m_updateInterval)),
-                            m_updateInterval.floatValue), 0.0f);
+                m_updateInterval.floatValue = math.max(EditorGUILayout.FloatField(ObjectNames.NicifyVariableName(nameof(m_updateInterval)), m_updateInterval.floatValue), 0.0f);
+                m_maxChunksHeight.intValue = math.max(EditorGUILayout.IntField(ObjectNames.NicifyVariableName(nameof(m_maxChunksHeight)), m_maxChunksHeight.intValue), 0);
+                m_maxChunksDepth.intValue = math.max(EditorGUILayout.IntField(ObjectNames.NicifyVariableName(nameof(m_maxChunksDepth)), m_maxChunksDepth.intValue), 0);
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();

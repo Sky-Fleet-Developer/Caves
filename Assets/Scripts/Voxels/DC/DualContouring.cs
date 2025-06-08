@@ -213,6 +213,7 @@ namespace Voxels.DC
                 m_parent.m_voxelConfig.DualContouringConfig.Compute.SetBool(ComputeShaderProperties.PreviewCutoff, cutoffConfig.HasValue);
                 if (cutoffConfig.HasValue)
                 {
+                    m_parent.m_voxelConfig.DualContouringConfig.Compute.SetBool(ComputeShaderProperties.InvertCutoff, m_parent.m_voxelConfig.PreviewCutoffConfig.IsEffectInverted);
                     m_parent.m_voxelConfig.DualContouringConfig.Compute.SetVector(ComputeShaderProperties.CutoffMin, cutoffConfig.Value.min);
                     m_parent.m_voxelConfig.DualContouringConfig.Compute.SetVector(ComputeShaderProperties.CutoffMax, cutoffConfig.Value.max);
                 }

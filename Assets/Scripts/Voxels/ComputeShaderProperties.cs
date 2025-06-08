@@ -23,6 +23,7 @@ namespace Voxels
         public static readonly int PreviewCutoff = Shader.PropertyToID("previewCutoff");
         public static readonly int CutoffMin = Shader.PropertyToID("cutoffMin");
         public static readonly int CutoffMax = Shader.PropertyToID("cutoffMax");
+        public static readonly int InvertCutoff = Shader.PropertyToID("invertCutoff");
         public static readonly int VoxelVolumeRead = Shader.PropertyToID("voxel_volume_read");
         public static readonly int VoxelVolumeWrite = Shader.PropertyToID("voxel_volume_write");
         public static readonly int MaterialPropertiesConfig = Shader.PropertyToID("material_properties_config");

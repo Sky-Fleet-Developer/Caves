@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Voxels
 {
@@ -6,8 +7,9 @@ namespace Voxels
     public class PreviewCutoffConfig
     {
         [SerializeField] private bool usePreviewCutoff;
+        [FormerlySerializedAs("invertEffect")] [SerializeField] private bool effectInverted;
         [SerializeField] private Bounds cutoffBounds;
-
+        public bool IsEffectInverted => effectInverted;
         public Bounds? GetConfig()
         {
             return usePreviewCutoff ? cutoffBounds : null;

@@ -34,6 +34,10 @@ namespace World
         [SerializeField]
         private float[] m_lodDistances;
         [SerializeField]
+        private int m_maxChunksHeight;
+        [SerializeField]
+        private int m_maxChunksDepth;
+        [SerializeField]
         private string cachePath;
         [SerializeField]
         private string cacheFileName;
@@ -238,6 +242,10 @@ namespace World
 
         private void EnqueueChunk(int3 neighbourChunkCoordinate, float3 viewerPosition)
         {
+            if (neighbourChunkCoordinate.y < -m_maxChunksDepth || neighbourChunkCoordinate.y > m_maxChunksHeight)
+            {
+                return;
+            }
             if (!m_processedChunkCoordinates.Contains(neighbourChunkCoordinate))
             {
                 float3 neighbourChunkPosition = neighbourChunkCoordinate * m_chunkDimensions;

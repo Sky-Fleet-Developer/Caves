@@ -171,7 +171,6 @@ MonoBehaviour:
   erodeCompute: {fileID: 7200000, guid: a4bbc6f50b4ff6b479581c45ebb7d5f2, type: 3}
   syncCompute: {fileID: 7200000, guid: e741692e9bcb8104b884a1ee770f8d8c, type: 3}
   defaultVoxelWetness: 0.1
-  useSync: 1
 --- !u!1 &113563605
 GameObject:
   m_ObjectHideFlags: 0
@@ -342,9 +341,12 @@ MonoBehaviour:
   m_chunkPrefab: {fileID: 6443619016532032082, guid: 3605e23936cdf3f498ff9f218128ac42, type: 3}
   m_initialChunkPoolPopulation: 500
   m_lodDistances:
-  - 100
-  - 120
-  - 150
+  - 125
+  - 250
+  - 500
+  - 1000
+  m_maxChunksHeight: 2
+  m_maxChunksDepth: 2
   cachePath: G:/Projects/Voxels/Tuntenfisch/VoxelsCache
   cacheFileName: map {0}, {1}, {2}
 --- !u!114 &337836006
@@ -406,9 +408,10 @@ MonoBehaviour:
   m_generationGraph: {fileID: 11400000, guid: cc31ddf977a6fb1439d10c0b892f3bbc, type: 2}
   m_previewCutoffConfig:
     usePreviewCutoff: 1
+    effectInverted: 1
     cutoffBounds:
       m_Center: {x: 0, y: 0, z: 0}
-      m_Extent: {x: 115, y: 115, z: 10}
+      m_Extent: {x: 10, y: 10, z: 10}
 --- !u!114 &337836010
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_compute: {fileID: 7200000, guid: 945078b799b71cc45808878451165ddd, type: 3}
   m_numberOfVoxelsAlongAxis: 67
-  m_voxelSpacing: 0.8
+  m_voxelSpacing: 1

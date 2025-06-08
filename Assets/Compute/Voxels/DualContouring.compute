@@ -47,6 +47,7 @@ uint cellStride;
 uint schmitzParticleIterations;
 float schmitzParticleStepSize;
 bool previewCutoff;
+bool invertCutoff;
 float4 cutoffMin;
 float4 cutoffMax;
 
@@ -215,14 +216,22 @@ void CalculatePositionsAndNormals(uint3 coordinate)
         if(previewCutoff)
         {
             float3 pA = VoxelVolumeToWorldSpace(VoxelToVoxelVolumeSpace(coordinate + cellCornerA));
-            if(sampleA.valueAndGradient.x < 0 && (pA.x < cutoffMin.x || pA.y < cutoffMin.y || pA.z < cutoffMin.z || pA.x > cutoffMax.x || pA.y > cutoffMax.y || pA.z > cutoffMax.z))
+            if(sampleA.valueAndGradient.x < 0)
             {
-                sampleA.valueAndGradient.x *= -1;
+                bool isPointInside = pA.x < cutoffMin.x || pA.y < cutoffMin.y || pA.z < cutoffMin.z || pA.x > cutoffMax.x || pA.y > cutoffMax.y || pA.z > cutoffMax.z;
+                if (isPointInside != invertCutoff)
+                {
+                    sampleA.valueAndGradient.x *= -1;
+                }
             }
             float3 pB = VoxelVolumeToWorldSpace(VoxelToVoxelVolumeSpace(coordinate + cellCornerB));
-            if(sampleB.valueAndGradient.x < 0 && (pB.x < cutoffMin.x || pB.y < cutoffMin.y || pB.z < cutoffMin.z || pB.x > cutoffMax.x || pB.y > cutoffMax.y || pB.z > cutoffMax.z))
+            if(sampleB.valueAndGradient.x < 0)
             {
-                sampleB.valueAndGradient.x *= -1;
+                bool isPointInside = pB.x < cutoffMin.x || pB.y < cutoffMin.y || pB.z < cutoffMin.z || pB.x > cutoffMax.x || pB.y > cutoffMax.y || pB.z > cutoffMax.z;
+                if (isPointInside != invertCutoff)
+                {
+                    sampleB.valueAndGradient.x *= -1;
+                }
             }
         }
 
@@ -392,14 +401,22 @@ void GenerateTriangles(uint3 cellID : SV_DispatchThreadID)
         if(previewCutoff)
         {
             const float3 pA = VoxelVolumeToWorldSpace(VoxelToVoxelVolumeSpace(cellID + cellCorners[cellEdge.GetCornerStartIndex()]));
-            if(sampleA.valueAndGradient.x < 0 && (pA.x < cutoffMin.x || pA.y < cutoffMin.y || pA.z < cutoffMin.z || pA.x > cutoffMax.x || pA.y > cutoffMax.y || pA.z > cutoffMax.z))
+            if(sampleA.valueAndGradient.x < 0)
             {
-                sampleA.valueAndGradient.x *= -1;
+                bool isPointInside = pA.x < cutoffMin.x || pA.y < cutoffMin.y || pA.z < cutoffMin.z || pA.x > cutoffMax.x || pA.y > cutoffMax.y || pA.z > cutoffMax.z;
+                if (isPointInside != invertCutoff)
+                {
+                    sampleA.valueAndGradient.x *= -1;
+                }
             }
             const float3 pB = VoxelVolumeToWorldSpace(VoxelToVoxelVolumeSpace(cellID + cellCorners[cellEdge.GetCornerEndIndex()]));
-            if(sampleB.valueAndGradient.x < 0 && (pB.x < cutoffMin.x || pB.y < cutoffMin.y || pB.z < cutoffMin.z || pB.x > cutoffMax.x || pB.y > cutoffMax.y || pB.z > cutoffMax.z))
+            if(sampleB.valueAndGradient.x < 0)
             {
-                sampleB.valueAndGradient.x *= -1;
+                bool isPointInside = pB.x < cutoffMin.x || pB.y < cutoffMin.y || pB.z < cutoffMin.z || pB.x > cutoffMax.x || pB.y > cutoffMax.y || pB.z > cutoffMax.z;
+                if (isPointInside != invertCutoff)
+                {
+                    sampleB.valueAndGradient.x *= -1;
+                }
             }
         }
 
